@@ -7,7 +7,7 @@ exports.offer = async (req, res) => {
         const { shop_id } = req.body; 
         
         const offers = await db.Offer.findAll({
-            where: { shop_id,disabled:false}, 
+            where: { shop_id}, 
             include: [{
                 model: db.DiscountSlab,
                 attributes: ['id', 'purchaseThreshold', 'discountPercentage'],

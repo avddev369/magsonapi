@@ -26,13 +26,22 @@ exports.createTransaction = async (req, res) => {
 
 exports.getAllTransaction = async (req, res) => {
     try {
-        // Fetch transactions along with associated customer details
+        const { shopId } = req.body;
+
+        if (!shopId) {
+            return res.status(400).json({ error: 'shop id parameter is required' });
+        }
         var transactionsWithCustomer = await db.Transaction.findAll({
+            wehre:{
+                shopId:shopId
+            },
             include: [{
                 model: db.Customer,
+               
                 attributes: ['id', 'name', 'phone_number', 'total_trancCount', 'balance', 'reedem'],
             },{
                 model: db.Shop,
+             
                attributes: ['id', 'name', 'retainedPercentage'],
             }],
    
@@ -45,8 +54,8 @@ exports.getAllTransaction = async (req, res) => {
                 maxReedemAmount: transaction.customer_master.balance-(transaction.customer_master.balance * (transaction.shops_master.retainedPercentage/100))
             };
         });
-  
-        myRes.successResponse(res, transactionsWithCustomer);
+   const filteredTransactions = transactionsWithCustomer.filter(transaction => transaction.shopId === shopId);
+        myRes.successResponse(res, filteredTransactions);
     } catch (error) {
         console.error('Error fetching transactions:', error);
         myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);

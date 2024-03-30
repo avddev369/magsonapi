@@ -17,6 +17,15 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.INTEGER,
             defaultValue: 0
         },
+        balance: {
+            type: Sequelize.DOUBLE,
+            defaultValue: 0
+        },
+        reedem: {
+            type: Sequelize.DOUBLE,
+            defaultValue: 0
+        },
+
         shop_id: {
             type: Sequelize.INTEGER,
             allowNull: false
@@ -24,7 +33,8 @@ module.exports = (sequelize, Sequelize) => {
     });
 
     Customer.associate = (models) => {
-        Customer.belongsTo(models.Shop, { sourceKey:"id",foreignKey: 'shop_id' });
+        Customer.belongsTo(models.Shop, { foreignKey: 'shop_id', onDelete: 'CASCADE' });
+        Customer.hasMany(models.Transaction, { foreignKey: 'customerId', onDelete: 'CASCADE' }); 
     };
     
     return Customer;

@@ -4,7 +4,11 @@ module.exports = app => {
     var router = require("express").Router();
 
     router.post("/login", user.login);
+    
     router.get("/customers", user.customers);
+
+    router.post("/getAllCustomer", user.getAllCustomer);
+    router.post("/getTopCustomerByPurchase", user.getTopCustomerByPurchase);
     
     app.use("/", router);
 };

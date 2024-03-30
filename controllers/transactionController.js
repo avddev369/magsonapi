@@ -22,3 +22,33 @@ exports.createTransaction = async (req, res) => {
         myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
     }
 };
+
+
+exports.getAllTransaction = async (req, res) => {
+    try {
+        // Fetch transactions along with associated customer details
+        var transactionsWithCustomer = await db.Transaction.findAll({
+            include: [{
+                model: db.Customer,
+                attributes: ['id', 'name', 'phone_number', 'total_trancCount', 'balance', 'reedem'],
+            },{
+                model: db.Shop,
+               attributes: ['id', 'name', 'retainedPercentage'],
+            }],
+   
+            attributes: { exclude: ['createdAt', 'updatedAt','redeemedAmount','customerId'] },
+            order: [['id', 'DESC']] 
+        });
+        transactionsWithCustomer = transactionsWithCustomer.map(transaction => {
+            return {
+                ...transaction.toJSON(),
+                maxReedemAmount: transaction.customer_master.balance-(transaction.customer_master.balance * (transaction.shops_master.retainedPercentage/100))
+            };
+        });
+  
+        myRes.successResponse(res, transactionsWithCustomer);
+    } catch (error) {
+        console.error('Error fetching transactions:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
+    }
+};

@@ -35,18 +35,7 @@ module.exports = (sequelize, Sequelize) => {
     };
 
 
-    // Transaction.addHook('beforeCreate', async (transaction, options) => {
-    //     const { Customer } = require('./Customer'); // Import Customer model here to avoid circular dependency
-    //     const customer = await Customer.findByPk(transaction.customerId);
-    //     if (customer) {
-    //         const retainedPercentage = customer.retainedPercentage || 0;
-    //         const retainedAmount = (retainedPercentage / 100) * transaction.amount;
-    //         transaction.redeemedAmount = Math.min(customer.totalRedeemedAmount, transaction.discountedAmount || 0);
-    //         const remainingRedeemedAmount = customer.totalRedeemedAmount - transaction.redeemedAmount;
-    //         customer.totalRedeemedAmount = remainingRedeemedAmount + retainedAmount;
-    //         await customer.save();
-    //     }
-    // });
+
 
     return Transaction;
 };

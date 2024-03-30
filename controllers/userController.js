@@ -55,3 +55,56 @@ exports.customers = async (req, res) => {
         myRes.errorResponse(res, { error: 'Internal Server Error' });
     }
 };
+
+exports.getAllCustomer = async (req, res) => {
+    try {
+        const { shopId } = req.body;
+
+        if (!shopId) {
+            return res.status(400).json({ error: 'shop id parameter is required' });
+        }
+
+        const customers = await db.Customer.findAll({
+            where: {
+                shop_id: shopId,
+
+            }
+        });
+
+        myRes.successResponse(res, customers);
+    } catch (error) {
+        console.error('Error searching customers:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' });
+    }
+};
+
+exports.getTopCustomerByPurchase = async (req, res) => {
+    try {
+        const { shopId, limit } = req.body;
+
+        if (!shopId) {
+            return res.status(400).json({ error: 'shop id parameter is required' });
+        }
+
+        const topCustomers = await db.Transaction.findAll({
+            where: {
+                shopId: shopId,
+            },
+            attributes: [
+                'customerId',
+                [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPurchaseAmount']
+            ],
+            include: [{
+                model: db.Customer,
+                attributes: ['id', 'name', 'phone_number', 'balance', 'reedem', 'shop_id'],
+            }],
+            group: ['transaction.customerId','customer_master.id'],
+            order: [['totalPurchaseAmount', 'DESC']],
+            limit:limit
+        });
+        myRes.successResponse(res, topCustomers);
+    } catch (error) {
+        console.error('Error searching customers:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' });
+    }
+};

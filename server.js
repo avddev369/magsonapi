@@ -10,7 +10,8 @@ app.use(cors());
 //Database
 const db = require("./models");
 
-// db.sequelize.sync({after:true})
+
+// db.sequelize.sync({ force:false})
 //   .then(() => {
 
 //     console.log("Synced db.");

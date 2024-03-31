@@ -78,13 +78,13 @@ exports.getAllTransaction = async (req, res) => {
 
 exports.insertTransaction = async (req, res) => {
     try {
-        const {  amount, discountedAmount, shopId, type, phoneNumber} = req.body;
+        const { amount, discountedAmount, shopId, type, phoneNumber, redeemedAmount } = req.body;
 
-        if (!shopId || !phoneNumber || !amount || !discountedAmount || !type) {
-            return res.status(400).json({ error: 'customerId, amount, discountedAmount, shopId, type parameters are required' });
-        }
+        // if (!shopId || !phoneNumber || !amount || !discountedAmount || !type || !redeemedAmount) {
+        //     return res.status(400).json({ error: 'amount, discountedAmount, shopId, type, phoneNumber, redeemedAmount parameters are required' });
+        // }
 
-        var customer = await db.Customer.findOne({
+        let customer = await db.Customer.findOne({
             where: {
                 phone_number: phoneNumber,
                 shop_id: shopId
@@ -94,29 +94,37 @@ exports.insertTransaction = async (req, res) => {
         if (!customer) {
             customer = await db.Customer.create({
                 balance: 0,
-                phone_number:phoneNumber,
+                phone_number: phoneNumber,
                 total_trancCount: 0,
                 reedem: 0,
                 shop_id: shopId,
             });
         }
 
-        const newTransaction = await db.Transaction.create({
-            customerId:customer.id,
-            amount,
-            discountedAmount,
-            shopId
-        });
-
+        let newTransaction;
 
         if (type === 'discount') {
+            newTransaction = await db.Transaction.create({
+                customerId: customer.id,
+                amount,
+                discountedAmount,
+                shopId
+            });
+
             await customer.increment({
                 balance: discountedAmount, // New Discount Amount
                 total_trancCount: 1
             });
-        } else if (type === 'reedem') {
+        } else if (type === 'redeem') {
+            newTransaction = await db.Transaction.create({
+                customerId: customer.id,
+                amount,
+                redeemedAmount,
+                shopId
+            });
+
             await customer.increment({
-                balance: -discountedAmount, // Reatin Discount Amount
+                balance: -redeemedAmount, // Reatin Discount Amount
                 total_trancCount: 1
             });
         } else {
@@ -129,7 +137,6 @@ exports.insertTransaction = async (req, res) => {
         myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
     }
 };
-
 
 exports.getAllTransactionByDate = async (req, res) => {
     try {

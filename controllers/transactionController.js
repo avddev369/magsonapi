@@ -47,7 +47,7 @@ exports.getAllTransaction = async (req, res) => {
                 attributes: ['id', 'name', 'retainedPercentage'],
             }],
 
-            attributes: { exclude: ['createdAt', 'updatedAt', 'redeemedAmount', 'customerId'] },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'customerId'] },
             order: [['id', 'DESC']]
         });
 

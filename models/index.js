@@ -37,7 +37,7 @@ db.Customer = require("./Customer.js")(sequelize, Sequelize);
 db.Offer = require("./Offer.js")(sequelize, Sequelize);
 db.DiscountSlab = require("./DiscountSlab.js")(sequelize, Sequelize);
 db.Transaction = require("./Transaction.js")(sequelize, Sequelize);
-
+db.Condition = require("./Condition.js")(sequelize, Sequelize);
 Object.values(db).forEach(model => {
   if (model.associate) {
     model.associate(db);

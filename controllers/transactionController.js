@@ -31,32 +31,148 @@ exports.getAllTransaction = async (req, res) => {
         if (!shopId) {
             return res.status(400).json({ error: 'shop id parameter is required' });
         }
+
+        const adminCondtion = await db.Condition.findOne({ where: { id: 1 } });
         var transactionsWithCustomer = await db.Transaction.findAll({
-            wehre:{
-                shopId:shopId
+            wehre: {
+                shopId: shopId
             },
             include: [{
                 model: db.Customer,
-               
-                attributes: ['id', 'name', 'phone_number', 'total_trancCount', 'balance', 'reedem'],
-            },{
+
+                attributes: ['id', 'name', 'phone_number', 'total_trancCount', 'balance', 'reedem', 'updatedAt'],
+            }, {
                 model: db.Shop,
-             
-               attributes: ['id', 'name', 'retainedPercentage'],
+
+                attributes: ['id', 'name', 'retainedPercentage'],
             }],
-   
-            attributes: { exclude: ['createdAt', 'updatedAt','redeemedAmount','customerId'] },
-            order: [['id', 'DESC']] 
+
+            attributes: { exclude: ['createdAt', 'updatedAt', 'redeemedAmount', 'customerId'] },
+            order: [['id', 'DESC']]
         });
-        transactionsWithCustomer = transactionsWithCustomer.map(transaction => {
-            return {
-                ...transaction.toJSON(),
-                maxReedemAmount: transaction.customer_master.balance-(transaction.customer_master.balance * (transaction.shops_master.retainedPercentage/100))
-            };
-        });
-   const filteredTransactions = transactionsWithCustomer.filter(transaction => transaction.shopId === shopId);
+
+        // Day * hours  * minutes  * second * milliseconds  
+        var ONE_WEEK_IN_MS = (adminCondtion.maxReedemDays) * 24 * 60 * 60 * 1000;
+
+        transactionsWithCustomer = await Promise.all(transactionsWithCustomer.map(async transaction => {
+            const updatedAtDiff = new Date() - new Date(transaction.customer_master.updatedAt);
+            var discount = transaction.customer_master.balance - (transaction.customer_master.balance * (transaction.shops_master.retainedPercentage / 100));
+
+            var isAdminMax = discount > (adminCondtion.maxReedemAmount);
+            if (updatedAtDiff > ONE_WEEK_IN_MS) {
+                await db.Customer.update({ balance: 10 }, { where: { id: transaction.customer_master.id } });
+                return { ...transaction.toJSON(), maxReedemAmount: 0, isAdminMax };
+            } else {
+                return { ...transaction.toJSON(), maxReedemAmount: discount, isAdminMax };
+            }
+        }));
+
+        const filteredTransactions = transactionsWithCustomer.filter(transaction => transaction.shopId === shopId);
         myRes.successResponse(res, filteredTransactions);
     } catch (error) {
+        console.error('Error fetching transactions:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
+    }
+};
+
+
+exports.insertTransaction = async (req, res) => {
+    try {
+        const { customerId, amount, discountedAmount, shopId, type } = req.body;
+
+        if (!shopId || !customerId || !amount || !discountedAmount || !type) {
+            return res.status(400).json({ error: 'customerId, amount, discountedAmount, shopId, type parameters are required' });
+        }
+
+        const newTransaction = await db.Transaction.create({
+            customerId,
+            amount,
+            discountedAmount,
+            shopId
+        });
+
+
+        const customer = await db.Customer.findByPk(customerId);
+        if (!customer) {
+            customer = await db.Customer.create({
+                id: customerId,
+                balance: 0,
+                total_trancCount: 0,
+                reedem: 0,
+                shop_id: shopId,
+            });
+        }
+
+        if (type === 'discount') {
+            await customer.increment({
+                balance: discountedAmount, // New Discount Amount
+                total_trancCount: 1
+            });
+        } else if (type === 'reedem') {
+            await customer.increment({
+                balance: -discountedAmount, // Reatin Discount Amount
+                total_trancCount: 1
+            });
+        } else {
+            return res.status(400).json({ error: 'Invalid transaction type' });
+        }
+
+        myRes.successResponse(res, newTransaction);
+    } catch (error) {
+        console.error('Error inserting transaction:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
+    }
+};
+
+
+exports.getAllTransactionByDate = async (req, res) => {
+    try {
+        const { shopId, startDate, endDate } = req.body;
+
+        // Check if shopId and startDate are provided
+        if (!shopId || !startDate) {
+            return res.status(400).json({ error: 'shopId and startDate parameters are required' });
+        }
+
+        // Convert startDateTime to start of day and endDateTime to end of day
+        let startDateTime = new Date(startDate);
+        startDateTime.setHours(0, 0, 0, 0);
+
+        let endDateTime = endDate ? new Date(endDate) : new Date(startDateTime);
+        endDateTime.setHours(23, 59, 59, 999);
+
+        // Validate date range
+        if (startDateTime >= endDateTime) {
+            return res.status(400).json({ error: 'startDate must be before endDate' });
+        }
+
+        // Fetch transactions within the specified date range
+        const transactionsWithCustomer = await db.Transaction.findAll({
+            where: {
+                shopId: shopId,
+                createdAt: {
+                    [db.Sequelize.Op.and]: [
+                        { [db.Sequelize.Op.gte]: startDateTime },
+                        { [db.Sequelize.Op.lte]: endDateTime }
+                    ]
+                }
+            },
+            include: [{
+                model: db.Customer,
+                attributes: ['id', 'name', 'phone_number', 'total_trancCount', 'balance', 'reedem', 'updatedAt'],
+            }, {
+                model: db.Shop,
+                attributes: ['id', 'name', 'retainedPercentage'],
+            }],
+            attributes: { exclude: ['updatedAt', 'redeemedAmount', 'customerId'] },
+            order: [['id', 'DESC']]
+        });
+
+        const shopFind = await db.Shop.findByPk(shopId);
+        const filteredTransactions = transactionsWithCustomer.filter(transaction => transaction.shopId === shopId);
+        myRes.successResponse(res, {shop:shopFind,transactions:filteredTransactions,});
+    } catch (error) {
+        // Handle errors
         console.error('Error fetching transactions:', error);
         myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
     }

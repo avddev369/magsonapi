@@ -13,6 +13,10 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.INTEGER,
             allowNull: false,
         },
+        shopId: {
+            type: Sequelize.INTEGER,
+            allowNull: false
+        }
     });
 
     return Condition;

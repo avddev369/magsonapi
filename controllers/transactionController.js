@@ -32,7 +32,7 @@ exports.getAllTransaction = async (req, res) => {
             return res.status(400).json({ error: 'shop id parameter is required' });
         }
 
-        const adminCondtion = await db.Condition.findOne({ where: { id: 1 } });
+        const adminCondtion = await db.Condition.findOne({ where: { shopId:shopId} });
         var transactionsWithCustomer = await db.Transaction.findAll({
             wehre: {
                 shopId: shopId

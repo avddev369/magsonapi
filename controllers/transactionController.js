@@ -78,30 +78,36 @@ exports.getAllTransaction = async (req, res) => {
 
 exports.insertTransaction = async (req, res) => {
     try {
-        const { customerId, amount, discountedAmount, shopId, type } = req.body;
+        const {  amount, discountedAmount, shopId, type, phoneNumber} = req.body;
 
-        if (!shopId || !customerId || !amount || !discountedAmount || !type) {
+        if (!shopId || !phoneNumber || !amount || !discountedAmount || !type) {
             return res.status(400).json({ error: 'customerId, amount, discountedAmount, shopId, type parameters are required' });
         }
 
-        const newTransaction = await db.Transaction.create({
-            customerId,
-            amount,
-            discountedAmount,
-            shopId
+        var customer = await db.Customer.findOne({
+            where: {
+                phone_number: phoneNumber,
+                shop_id: shopId
+            }
         });
 
-
-        const customer = await db.Customer.findByPk(customerId);
         if (!customer) {
             customer = await db.Customer.create({
-                id: customerId,
                 balance: 0,
+                phone_number:phoneNumber,
                 total_trancCount: 0,
                 reedem: 0,
                 shop_id: shopId,
             });
         }
+
+        const newTransaction = await db.Transaction.create({
+            customerId:customer.id,
+            amount,
+            discountedAmount,
+            shopId
+        });
+
 
         if (type === 'discount') {
             await customer.increment({

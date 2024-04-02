@@ -190,3 +190,30 @@ exports.getAllTransactionByDate = async (req, res) => {
         myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
     }
 };
+
+
+exports.updateConditionByShopId = async (req, res) => {
+    const { shopId,maxReedemDays, maxReedemAmount } = req.body;
+
+    try {
+        let condition;
+
+        if (maxReedemDays !== undefined && maxReedemAmount !== undefined) {
+            condition = await db.Condition.update(
+                { maxReedemDays, maxReedemAmount },
+                { where: { shopId } }
+            );
+        } 
+        condition = await db.Condition.findOne({ where: { shopId } });
+
+        if (!condition) {
+            myRes.errorResponse(res, { error: 'Condition data not found for the provided shop ID' }, 200);
+        }
+
+        myRes.successResponse(res, condition);
+    } catch (error) {
+        console.error('Error updating condition data:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
+
+    }
+};

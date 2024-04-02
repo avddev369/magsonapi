@@ -96,7 +96,7 @@ exports.getTopCustomerByPurchase = async (req, res) => {
             ],
             include: [{
                 model: db.Customer,
-                attributes: ['id', 'name', 'phone_number', 'balance', 'reedem', 'shop_id'],
+                attributes: ['id', 'name', 'phone_number', 'balance', 'reedem', 'shop_id','updatedAt'],
             }],
             group: ['transaction.customerId', 'customer_master.id'],
             order: [['totalPurchaseAmount', 'DESC']],

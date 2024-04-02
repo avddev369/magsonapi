@@ -118,9 +118,9 @@ exports.getTotalCounts = async (req, res) => {
             return res.status(400).json({ error: 'shop id parameter is required' });
         }
 
-        const transactionCount = await db.Transaction.count({ shopId: shopId });
-        const customerCount = await db.Customer.count({ shop_id: shopId });
-
+        const transactionCount = await db.Transaction.count({ where: { shopId: shopId } });
+        const customerCount = await db.Customer.count({ where: { shop_id: shopId } });
+        
         const totalPurchaseAmount = await db.Transaction.findAll({
             where: {
                 shopId: shopId,

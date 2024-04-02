@@ -98,11 +98,40 @@ exports.getTopCustomerByPurchase = async (req, res) => {
                 model: db.Customer,
                 attributes: ['id', 'name', 'phone_number', 'balance', 'reedem', 'shop_id'],
             }],
-            group: ['transaction.customerId','customer_master.id'],
+            group: ['transaction.customerId', 'customer_master.id'],
             order: [['totalPurchaseAmount', 'DESC']],
-            limit:limit
+            limit: limit
         });
         myRes.successResponse(res, topCustomers);
+    } catch (error) {
+        console.error('Error searching customers:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' });
+    }
+};
+
+
+exports.getTotalCounts = async (req, res) => {
+    try {
+        const { shopId } = req.body;
+
+        if (!shopId) {
+            return res.status(400).json({ error: 'shop id parameter is required' });
+        }
+
+        const transactionCount = await db.Transaction.count({ shopId: shopId });
+        const customerCount = await db.Customer.count({ shop_id: shopId });
+
+        const totalPurchaseAmount = await db.Transaction.findAll({
+            where: {
+                shopId: shopId,
+            },
+            attributes: [
+                [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPurchase'],
+                [db.sequelize.fn('SUM', db.sequelize.col('discountedAmount')), 'totalDiscounte']
+            ]
+        });
+
+        myRes.successResponse(res, { totalCount: transactionCount, customerCount,totalPurchaseAmount:totalPurchaseAmount[0] });
     } catch (error) {
         console.error('Error searching customers:', error);
         myRes.errorResponse(res, { error: 'Internal Server Error' });

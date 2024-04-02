@@ -177,7 +177,7 @@ exports.getAllTransactionByDate = async (req, res) => {
                 model: db.Shop,
                 attributes: ['id', 'name', 'retainedPercentage'],
             }],
-            attributes: { exclude: ['updatedAt', 'redeemedAmount', 'customerId'] },
+            attributes: { exclude: ['updatedAt', 'customerId'] },
             order: [['id', 'DESC']]
         });
 

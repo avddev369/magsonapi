@@ -78,7 +78,7 @@ exports.getAllTransaction = async (req, res) => {
 
 exports.insertTransaction = async (req, res) => {
     try {
-        const { amount, discountedAmount, shopId, type, phoneNumber, redeemedAmount } = req.body;
+        const { amount, discountedAmount, shopId, type, phoneNumber, redeemedAmount,custName } = req.body;
 
         // if (!shopId || !phoneNumber || !amount || !discountedAmount || !type || !redeemedAmount) {
         //     return res.status(400).json({ error: 'amount, discountedAmount, shopId, type, phoneNumber, redeemedAmount parameters are required' });
@@ -91,6 +91,8 @@ exports.insertTransaction = async (req, res) => {
             }
         });
 
+        let newCustomer = false;
+
         if (!customer) {
             customer = await db.Customer.create({
                 balance: 0,
@@ -98,7 +100,11 @@ exports.insertTransaction = async (req, res) => {
                 total_trancCount: 0,
                 reedem: 0,
                 shop_id: shopId,
+                name: custName 
             });
+            newCustomer = true;
+        } else if (custName && custName !== customer.name) {
+            await customer.update({ name: custName });
         }
 
         let newTransaction;

@@ -80,10 +80,6 @@ exports.insertTransaction = async (req, res) => {
     try {
         const { amount, discountedAmount, shopId, type, phoneNumber, redeemedAmount,custName } = req.body;
 
-        // if (!shopId || !phoneNumber || !amount || !discountedAmount || !type || !redeemedAmount) {
-        //     return res.status(400).json({ error: 'amount, discountedAmount, shopId, type, phoneNumber, redeemedAmount parameters are required' });
-        // }
-
         let customer = await db.Customer.findOne({
             where: {
                 phone_number: phoneNumber,
@@ -221,5 +217,58 @@ exports.updateConditionByShopId = async (req, res) => {
         console.error('Error updating condition data:', error);
         myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
 
+    }
+};
+
+
+exports.deleteTransaction = async (req, res) => {
+    try {
+        const { transactionId } = req.body;
+
+        // Find the transaction to be deleted
+        const transaction = await db.Transaction.findOne({ 
+            where: { id: transactionId },
+            include: [{ model: db.Customer }] // Include customer info for recalculations
+        });
+
+        
+        
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        const cust = await db.Customer.findOne({ 
+            where: { id: transaction.customerId },
+        });
+
+        if (transaction.discountedAmount != 0) {
+            await cust.decrement({
+                balance: transaction.discountedAmount,
+                total_trancCount: 1
+            });
+    
+        } else if (transaction.redeemedAmount != 0 ) {
+            
+            await cust.decrement({
+                reedem: transaction.redeemedAmount,
+                total_trancCount: 1
+            });
+    
+        }else{
+            await cust.decrement({
+    
+                total_trancCount: 1
+            }); 
+        }
+
+
+    
+        // Delete the transaction
+        await transaction.destroy();
+
+        myRes.successResponse(res, { message: 'Transaction reverted successfully' });
+    } catch (error) {
+        console.error('Error reverting transaction:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
     }
 };

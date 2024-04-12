@@ -8,6 +8,7 @@ module.exports = app => {
     router.post("/insertTransaction", transaction.insertTransaction);
     router.post("/getAllTransactionByDate", transaction.getAllTransactionByDate);
     router.post("/updateConditionByShopId", transaction.updateConditionByShopId);
+    router.post("/deleteTransaction", transaction.deleteTransaction);
     app.use("/", router);
 };
       

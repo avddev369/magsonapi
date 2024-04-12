@@ -10,6 +10,7 @@ module.exports = app => {
     router.post("/getAllCustomer", user.getAllCustomer);
     router.post("/getTopCustomerByPurchase", user.getTopCustomerByPurchase);
     router.post("/getTotalCounts", user.getTotalCounts);
+    router.post("/getTodayTotalCounts", user.getTodayTotalCounts);
     
     app.use("/", router);
 };

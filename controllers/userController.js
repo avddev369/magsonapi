@@ -137,3 +137,48 @@ exports.getTotalCounts = async (req, res) => {
         myRes.errorResponse(res, { error: 'Internal Server Error' });
     }
 };
+
+exports.getTodayTotalCounts = async (req, res) => {
+    try {
+        const { shopId } = req.body;
+
+        if (!shopId) {
+            return res.status(400).json({ error: 'shop id parameter is required' });
+        }
+
+        // Get today's date
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+        const transactionCount = await db.Transaction.count({ 
+            where: { 
+                shopId: shopId,
+                createdAt: { [db.Sequelize.Op.between]: [startDate, endDate] } // Filter by today's date
+            } 
+        });
+
+        const customerCount = await db.Customer.count({ 
+            where: { 
+                shop_id: shopId,
+                createdAt: { [db.Sequelize.Op.between]: [startDate, endDate] } // Filter by today's date
+            } 
+        });
+
+        const totalPurchaseAmount = await db.Transaction.findAll({
+            where: {
+                shopId: shopId,
+                createdAt: { [db.Sequelize.Op.between]: [startDate, endDate] } // Filter by today's date
+            },
+            attributes: [
+                [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPurchase'],
+                [db.sequelize.fn('SUM', db.sequelize.col('discountedAmount')), 'totalDiscount']
+            ]
+        });
+
+        myRes.successResponse(res, { totalCount: transactionCount, customerCount, totalPurchaseAmount: totalPurchaseAmount[0] });
+    } catch (error) {
+        console.error('Error searching customers:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' });
+    }
+};

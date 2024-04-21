@@ -193,6 +193,57 @@ exports.getAllTransactionByDate = async (req, res) => {
     }
 };
 
+exports.getTodayTransactions = async (req, res) => {
+    try {
+        const { shopId } = req.body;
+
+        // Check if shopId is provided
+        if (!shopId) {
+            return res.status(400).json({ error: 'shopId parameter is required' });
+        }
+
+        // Get current date
+        const currentDate = new Date();
+        const startDateTime = new Date(currentDate);
+        startDateTime.setHours(0, 0, 0, 0); // Set to start of the day
+
+        const endDateTime = new Date(currentDate);
+        endDateTime.setHours(23, 59, 59, 999); // Set to end of the day
+
+        // Fetch transactions within the specified date range (today)
+        const transactionsWithCustomer = await db.Transaction.findAll({
+            where: {
+                shopId: shopId,
+                createdAt: {
+                    [db.Sequelize.Op.and]: [
+                        { [db.Sequelize.Op.gte]: startDateTime },
+                        { [db.Sequelize.Op.lte]: endDateTime }
+                    ]
+                }
+            },
+            include: [{
+                model: db.Customer,
+                attributes: ['id', 'name', 'phone_number', 'total_trancCount', 'balance', 'reedem', 'updatedAt'],
+            }, {
+                model: db.Shop,
+                attributes: ['id', 'name', 'retainedPercentage'],
+            }],
+            attributes: { exclude: ['updatedAt', 'customerId'] },
+            order: [['id', 'DESC']]
+        });
+
+        const shopFind = await db.Shop.findByPk(shopId);
+        const filteredTransactions = transactionsWithCustomer.filter(transaction => transaction.shopId === shopId);
+        myRes.successResponse(res, { shop: shopFind, transactions: filteredTransactions });
+    } catch (error) {
+        // Handle errors
+        console.error('Error fetching transactions:', error);
+        myRes.errorResponse(res, { error: 'Internal Server Error' }, 500);
+    }
+};
+
+
+
 
 exports.updateConditionByShopId = async (req, res) => {
     const { shopId,maxReedemDays, maxReedemAmount } = req.body;
